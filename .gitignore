@@ -4,9 +4,30 @@ __pycache__/
 *$py.class
 *.so
 .Python
+<<<<<<< HEAD
 .env
 .venv
 env/
+=======
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+>>>>>>> c1689cec6bb38730031f489de7733d8c7eeb36fc
 venv/
 ENV/
 
@@ -16,6 +37,22 @@ ENV/
 *.swp
 *.swo
 
+<<<<<<< HEAD
+=======
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Debug files
+debug_*/
+
+# CSV files
+*.csv
+!vins_vinatis_flat_complet.csv
+
+# Logs
+*.log
+
+>>>>>>> c1689cec6bb38730031f489de7733d8c7eeb36fc
 # OS
 .DS_Store
 .DS_Store?
