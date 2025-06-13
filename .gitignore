@@ -31,6 +31,22 @@ ENV/
 *.swp
 *.swo
 
+<<<<<<< HEAD
+=======
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Debug files
+debug_*/
+
+# CSV files
+*.csv
+!vins_vinatis_flat_complet.csv
+
+# Logs
+*.log
+
+>>>>>>> 52c8fa171986a345393bbb19d7d49ad5a4870e4a
 # OS
 .DS_Store
 .DS_Store?
@@ -38,8 +54,12 @@ ENV/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+<<<<<<< HEAD
 Thumbs.db
 
 # Project specific
 *.log
 .env 
+=======
+Thumbs.db 
+>>>>>>> 52c8fa171986a345393bbb19d7d49ad5a4870e4a
