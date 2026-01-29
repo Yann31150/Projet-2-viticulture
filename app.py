@@ -31,15 +31,79 @@ def load_image(url):
 @st.cache_data
 def load_data():
     df = pd.read_csv('vins_vinatis_flat_complet.csv')
-    df['bio'] = df['bio'].apply(lambda x: 1 if pd.notna(x) and 'Certifié Eurofeuille' in str(x) else 0)
-    if 'visuel' not in df.columns:
-        df['visuel'] = "https://www.vinatis.com/1-detail_default/default-wine.png"
+    
+    # Normalisation des colonnes pour correspondre au format attendu
+    # Colonne bio
+    if 'features_bio' in df.columns:
+        df['bio'] = df['features_bio'].apply(lambda x: 1 if pd.notna(x) and str(x) != 'nan' and str(x).lower() != 'nan' else 0)
     else:
-        df['visuel'] = df['visuel'].apply(lambda x: f"https://www.vinatis.com/{x}" if pd.notna(x) and not str(x).startswith('http') else x)
-    for col in df.columns:
-        if col != 'prix':
-            df[col] = df[col].astype(str)
-    df['prix'] = pd.to_numeric(df['prix'], errors='coerce')
+        df['bio'] = 0
+    
+    # Colonne nom
+    if 'name' in df.columns:
+        df['nom'] = df['name'].astype(str)
+    else:
+        df['nom'] = 'Vin sans nom'
+    
+    # Colonne pays
+    if 'features_country' in df.columns:
+        df['pays'] = df['features_country'].astype(str)
+    else:
+        df['pays'] = 'Non spécifié'
+    
+    # Colonne région
+    if 'features_region' in df.columns:
+        df['region'] = df['features_region'].astype(str)
+    else:
+        df['region'] = 'Non spécifié'
+    
+    # Colonne couleur
+    if 'features_colour' in df.columns:
+        df['couleur'] = df['features_colour'].astype(str)
+    else:
+        df['couleur'] = 'Non spécifié'
+    
+    # Colonne degré d'alcool
+    if 'features_abv' in df.columns:
+        df['deg_alcool'] = pd.to_numeric(df['features_abv'], errors='coerce')
+    else:
+        df['deg_alcool'] = 0
+    
+    # Colonne accords
+    if 'features_food_and_wine_matching' in df.columns:
+        df['accords'] = df['features_food_and_wine_matching'].astype(str)
+    else:
+        df['accords'] = 'nan'
+    
+    # Colonne description
+    if 'description_short' in df.columns:
+        df['desc'] = df['description_short'].astype(str)
+    elif 'description' in df.columns:
+        df['desc'] = df['description'].astype(str)
+    else:
+        df['desc'] = 'nan'
+    
+    # Colonne visuel (image)
+    if 'image_url' in df.columns:
+        df['visuel'] = df['image_url'].astype(str)
+        df['visuel'] = df['visuel'].apply(lambda x: x if pd.notna(x) and str(x) != 'nan' and str(x).startswith('http') else "https://www.vinatis.com/1-detail_default/default-wine.png")
+    elif 'image' in df.columns:
+        df['visuel'] = df['image'].apply(lambda x: f"https://www.vinatis.com/{x}" if pd.notna(x) and str(x) != 'nan' else "https://www.vinatis.com/1-detail_default/default-wine.png")
+    else:
+        df['visuel'] = "https://www.vinatis.com/1-detail_default/default-wine.png"
+    
+    # Colonne prix
+    if 'prices_best_price' in df.columns:
+        df['prix'] = pd.to_numeric(df['prices_best_price'], errors='coerce')
+    elif 'prices_price' in df.columns:
+        df['prix'] = pd.to_numeric(df['prices_price'], errors='coerce')
+    else:
+        df['prix'] = 0
+    
+    # Remplacer les valeurs 'nan' par des chaînes vides pour l'affichage
+    for col in ['nom', 'pays', 'region', 'couleur', 'accords', 'desc']:
+        df[col] = df[col].replace('nan', 'Non spécifié')
+    
     return df
 
 def display_wine_info(vin, show_recommendations=False):
@@ -51,18 +115,25 @@ def display_wine_info(vin, show_recommendations=False):
             st.warning("Impossible de charger l'image")
     else:
         st.warning("Pas d'image disponible pour ce vin")
-    st.markdown(f"### {vin['nom']} - {vin['prix']}€")
+    prix_str = f"{vin['prix']:.2f}€" if pd.notna(vin['prix']) and vin['prix'] > 0 else "Prix non disponible"
+    st.markdown(f"### {vin['nom']} - {prix_str}")
     st.write(f"**Pays:** {vin['pays']}")
     st.write(f"**Région:** {vin['region']}")
     st.write(f"**Couleur:** {vin['couleur']}")
-    st.write(f"**Degré d'alcool:** {vin['deg_alcool']}%")
-    if vin['bio'] == '1':
+    if pd.notna(vin['deg_alcool']) and vin['deg_alcool'] > 0:
+        st.write(f"**Degré d'alcool:** {vin['deg_alcool']}%")
+    if vin['bio'] == 1 or vin['bio'] == '1':
         display_bio_badge()
-    if pd.notna(vin['accords']) and vin['accords'] != 'nan':
+    if pd.notna(vin['accords']) and vin['accords'] != 'nan' and vin['accords'] != 'Non spécifié':
         accords = vin['accords'].replace('[', '').replace(']', '').replace("'", '')
         st.write(f"**Accords mets et vins:** {accords}")
-    if pd.notna(vin['desc']) and vin['desc'] != 'nan':
-        st.write(f"**Description:** {vin['desc']}")
+    if pd.notna(vin['desc']) and vin['desc'] != 'nan' and vin['desc'] != 'Non spécifié':
+        # Nettoyer le HTML de la description si présent
+        desc = vin['desc']
+        if '<' in desc:
+            import re
+            desc = re.sub('<[^<]+?>', '', desc)  # Supprimer les balises HTML
+        st.write(f"**Description:** {desc[:500]}..." if len(desc) > 500 else f"**Description:** {desc}")
     if not show_recommendations:
         if st.button(f"Voir les recommandations pour {vin['nom']}", key=f"reco_{vin['nom']}"):
             st.session_state.selected_wine = vin
@@ -177,7 +248,7 @@ elif page == "Recherche":
         if couleur != "Tous":
             resultats = resultats[resultats['couleur'].astype(str) == couleur]
         if bio:
-            resultats = resultats[resultats['bio'] == 1]
+            resultats = resultats[resultats['bio'].isin([1, '1'])]
         resultats['prix'] = pd.to_numeric(resultats['prix'], errors='coerce')
         resultats = resultats[(resultats['prix'] >= prix_min) & (resultats['prix'] <= prix_max)]
         if selected_accords:
