@@ -30,7 +30,7 @@ def load_image(url):
 # --- Chargement des données ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv('base_vin_final.csv')
+    df = pd.read_csv('vins_vinatis_flat_complet.csv')
     df['bio'] = df['bio'].apply(lambda x: 1 if pd.notna(x) and 'Certifié Eurofeuille' in str(x) else 0)
     if 'visuel' not in df.columns:
         df['visuel'] = "https://www.vinatis.com/1-detail_default/default-wine.png"

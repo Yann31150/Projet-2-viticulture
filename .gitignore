@@ -31,8 +31,6 @@ ENV/
 *.swp
 *.swo
 
-<<<<<<< HEAD
-=======
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -45,8 +43,6 @@ debug_*/
 
 # Logs
 *.log
-
->>>>>>> 52c8fa171986a345393bbb19d7d49ad5a4870e4a
 # OS
 .DS_Store
 .DS_Store?
@@ -54,12 +50,7 @@ debug_*/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-<<<<<<< HEAD
 Thumbs.db
 
 # Project specific
-*.log
-.env 
-=======
-Thumbs.db 
->>>>>>> 52c8fa171986a345393bbb19d7d49ad5a4870e4a
+.env
