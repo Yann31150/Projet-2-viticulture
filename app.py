@@ -100,9 +100,19 @@ def load_data():
     else:
         df['prix'] = 0
     
-    # Remplacer les valeurs 'nan' par des chaînes vides pour l'affichage
+    # Nettoyer les valeurs NaN et 'nan' pour l'affichage et la recherche
     for col in ['nom', 'pays', 'region', 'couleur', 'accords', 'desc']:
-        df[col] = df[col].replace('nan', 'Non spécifié')
+        # Remplacer les NaN pandas par 'Non spécifié'
+        df[col] = df[col].fillna('Non spécifié')
+        # Remplacer les chaînes 'nan' (en minuscules ou majuscules) par 'Non spécifié'
+        df[col] = df[col].replace(['nan', 'NaN', 'NAN', 'None', 'none'], 'Non spécifié')
+        # S'assurer que ce sont bien des chaînes
+        df[col] = df[col].astype(str)
+        # Remplacer les chaînes vides
+        df[col] = df[col].replace('', 'Non spécifié')
+    
+    # Filtrer les lignes avec des prix valides (supérieurs à 0)
+    df = df[df['prix'] > 0].copy()
     
     return df
 
@@ -212,16 +222,23 @@ elif page == "Recherche":
     st.header("Recherche de vins")
     col1, col2 = st.columns(2)
     with col1:
-        pays_list = ["Tous"] + sorted([str(x) for x in df['pays'].dropna().unique()])
-        couleur_list = ["Tous"] + sorted([str(x) for x in df['couleur'].dropna().unique()])
-        nom_list = ["Tous"] + sorted([str(x) for x in df['nom'].dropna().unique()])
+        # Filtrer les valeurs "Non spécifié" et "nan" des listes
+        pays_list = ["Tous"] + sorted([str(x) for x in df['pays'].unique() 
+                                       if pd.notna(x) and str(x).strip() not in ['nan', 'NaN', 'Non spécifié', '']])
+        couleur_list = ["Tous"] + sorted([str(x) for x in df['couleur'].unique() 
+                                         if pd.notna(x) and str(x).strip() not in ['nan', 'NaN', 'Non spécifié', '']])
+        nom_list = ["Tous"] + sorted([str(x) for x in df['nom'].unique() 
+                                      if pd.notna(x) and str(x).strip() not in ['nan', 'NaN', 'Non spécifié', 'Vin sans nom', '']])
         recherche_nom = st.selectbox("Rechercher un vin par son nom", nom_list)
         pays = st.selectbox("Pays", pays_list)
         couleur = st.selectbox("Couleur du vin", couleur_list)
         all_accords = []
         for accords in df['accords'].dropna():
-            accords_list = accords.replace('[', '').replace(']', '').replace("'", '').split(', ')
-            all_accords.extend(accords_list)
+            if str(accords).strip() not in ['nan', 'NaN', 'Non spécifié', '']:
+                # Nettoyer et extraire les accords
+                accords_str = str(accords).replace('[', '').replace(']', '').replace("'", '').replace('"', '')
+                accords_list = [a.strip() for a in accords_str.split(',') if a.strip()]
+                all_accords.extend(accords_list)
         selected_accords = st.multiselect(
             "Accords mets et vins",
             options=sorted(list(set(all_accords))),
@@ -241,19 +258,35 @@ elif page == "Recherche":
     prix_min, prix_max = prix_range
     if st.button("Rechercher"):
         resultats = df.copy()
+        
+        # Filtrer par nom
         if recherche_nom != "Tous":
-            resultats = resultats[resultats['nom'].astype(str) == recherche_nom]
+            resultats = resultats[resultats['nom'].astype(str).str.strip() == recherche_nom.strip()]
+        
+        # Filtrer par pays
         if pays != "Tous":
-            resultats = resultats[resultats['pays'].astype(str) == pays]
+            resultats = resultats[resultats['pays'].astype(str).str.strip() == pays.strip()]
+        
+        # Filtrer par couleur
         if couleur != "Tous":
-            resultats = resultats[resultats['couleur'].astype(str) == couleur]
+            resultats = resultats[resultats['couleur'].astype(str).str.strip() == couleur.strip()]
+        
+        # Filtrer par bio
         if bio:
             resultats = resultats[resultats['bio'].isin([1, '1'])]
+        
+        # Filtrer par prix (s'assurer que le prix est numérique)
+        resultats = resultats.copy()
         resultats['prix'] = pd.to_numeric(resultats['prix'], errors='coerce')
-        resultats = resultats[(resultats['prix'] >= prix_min) & (resultats['prix'] <= prix_max)]
+        resultats = resultats[(resultats['prix'] >= prix_min) & (resultats['prix'] <= prix_max) & (resultats['prix'].notna())]
+        
+        # Filtrer par accords mets et vins
         if selected_accords:
-            mask = resultats['accords'].apply(lambda x: any(accord in str(x) for accord in selected_accords))
+            mask = resultats['accords'].apply(
+                lambda x: any(accord.strip().lower() in str(x).lower() for accord in selected_accords)
+            )
             resultats = resultats[mask]
+        
         st.session_state.resultats = resultats
         st.session_state.page = "Résultats"
         st.rerun()
